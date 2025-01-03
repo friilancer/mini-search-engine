@@ -1,0 +1,5 @@
+env/*
+*.db
+.DS_Store
+indexer/search_index/*
+!indexer/search_index/meta.json
