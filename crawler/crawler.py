@@ -6,10 +6,9 @@ import time
 from dotenv import load_dotenv
 import os
 import re
-
+from urllib import robotparser
 
 load_dotenv()
-
 
 DOMAINS = os.getenv("DOMAINS", "").split(",")
 
@@ -22,6 +21,7 @@ def init_db():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS pages(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            domain TEXT NOT NULL,
             url TEXT NOT NULL UNIQUE,
             title TEXT NOT NULL,
             snippet TEXT
@@ -30,8 +30,24 @@ def init_db():
     conn.commit()
     return conn
 
+
+def is_allowed_by_robots(url, user_agent="MyMiniSearchEngine"):
+    parsed = urlparse(url)
+    robots_url = f"{parsed.scheme}://{parsed.netloc}/robots.txt"
+
+    rp = robotparser.RobotFileParser()
+    rp.set_url(robots_url)
+
+    try:
+        rp.read()
+    except Exception as e:
+
+        return True
+
+    return rp.can_fetch(user_agent, url)
+
 #function to crawl page
-def crawl_page(url, conn):
+def crawl_page(url, domain, conn):
     try:
         response = requests.get(url, timeout=10)
         response.raise_for_status()
@@ -54,14 +70,16 @@ def crawl_page(url, conn):
         
         full_text = " ".join(text_chunks)
 
+        full_text = re.sub(r"[^a-zA-Z0-9\s]", "", full_text)
+
         full_text = re.sub(r"\s+", " ", full_text)
         snippet = full_text if soup.body else ""
 
         cursor = conn.cursor()
         cursor.execute("""
-            INSERT OR IGNORE INTO pages (url, title, snippet)
-            VALUES (?, ?, ?)
-        """, (url, title, snippet))
+            INSERT OR IGNORE INTO pages (domain, url, title, snippet)
+            VALUES (?, ?, ?, ?)
+        """, (domain, url, title, snippet))
         
         conn.commit()
 
@@ -90,9 +108,12 @@ def crawl_domain(start_url, allowed_domain, max_pages=10000):
         while len(to_visit) > 0 and pages_crawled < max_pages:
             url = to_visit.pop(0)
             if url in visited:
-                continue      
+                continue     
+            if not is_allowed_by_robots(url):
+                print(f"[ROBOTS] Disallowed by robots.txt: {url}")
+                continue 
             try:
-                soup = crawl_page(url, conn)
+                soup = crawl_page(url, base_domain, conn)
                 visited.add(url)
                 pages_crawled += 1
                 ## find and queue internal links
@@ -115,7 +136,6 @@ def crawl_domain(start_url, allowed_domain, max_pages=10000):
     finally:
         conn.close()
         print(f"Crawled {len(visited)} pages from {base_domain}")
-
 
 def crawl_all_domains():
 

@@ -8,21 +8,25 @@ load_dotenv()
 
 INDEX_PATH = os.getenv("INDEX_PATH")
 
-
 # Create the Tantivy index schema
 def create_index():
     try: 
-        print(f"Index found at {INDEX_PATH}. Loading existing index...")
-        index = tantivy.Index.open(INDEX_PATH)
+        base_dir = os.path.abspath(os.path.dirname(__file__))
+        index_path = os.path.join(base_dir, '..', INDEX_PATH)
+        if not os.path.exists(index_path):
+            print(f"Creating folder for index at: {index_path}")
+            os.makedirs(index_path, exist_ok=True)
+        print(f"Index found at {index_path}. Loading existing index...")
+        index = tantivy.Index.open(index_path)
         return index
     except Exception as e:
-        print(f"Failed to load index at {INDEX_PATH}. Loading existing index...")
+        print(f"Failed to load index at {index_path}. Loading existing index... {e}")
         schema_builder = tantivy.SchemaBuilder()
         schema_builder.add_text_field("title", stored=True)
-        schema_builder.add_text_field("snippet", stored=True, indexed=True)
+        schema_builder.add_text_field("snippet", stored=True)
         schema_builder.add_text_field("url", stored=True)
         schema = schema_builder.build()
-        index = tantivy.Index(schema, path=INDEX_PATH)
+        index = tantivy.Index(schema, path=index_path)
         return index
     
     
@@ -30,7 +34,7 @@ def create_index():
 def index_data(index, db_path="crawler/crawled_data.db"):
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    cursor.execute("SELECT url, title, snippet FROM Pages")
+    cursor.execute("SELECT url, title, snippet FROM pages")
     rows = cursor.fetchall()
 
     writer = index.writer()

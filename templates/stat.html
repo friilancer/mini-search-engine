@@ -1,141 +1,66 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <title>Mini Search Engine</title>
+<head>
+  <meta charset="UTF-8">
+  <title>Search Engine Stats</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 2rem;
+    }
+    h1 {
+      margin-bottom: 1rem;
+    }
+    table {
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    th, td {
+      padding: 0.5rem 1rem;
+      border: 1px solid #ccc;
+    }
+    .home-container{
+      display: flex;
+      justify-content: end;
+      margin: 10px 0 20px
+    }
+  </style>
+</head>
+<body>
+  <h1>Search Engine Stats</h1>
+  <div class="home-container">
+      <a class="home-link" href="/">Go to home page</a>
+  </div>
+  <div id="stats"></div>
+  <script>
 
-        <style>
-            body {
-              font-family: Arial, sans-serif;
-              margin: 2rem;
-              background: #f9f9f9;
-            }
-            .search-container {
-              margin-bottom: 2rem;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              gap: 12px;
-              flex-wrap: wrap;
-              margin: 10px;
-            }
-            #query {
-              width: 300px;
-              padding: 0.5rem;
-            }
-            #search-button {
-              padding: 0.5rem 1rem;
-              cursor: pointer;
-            }
-            #latency {
-              color: #888;
-              margin: 2rem;
-              font-size: 13px;
-            }
-            #results {
-              margin-top: 2rem;
-            }
-            .result-item {
-              background: #fff;
-              border: 1px solid #ddd;
-              margin-bottom: 1rem;
-              padding: 1rem;
-            }
-            .result-text {
-                width: 100%;          
-                white-space: nowrap;   
-                overflow: hidden;       
-                text-overflow: ellipsis; 
-                display: inline-block;
-            }
-            .result-item h4 {
-              margin: 0 0 0.5rem 0;
-            }
-          </style>
-    </head>
+    async function fetchStats() {
+      try {
+        const response = await fetch("/api/stats"); 
+        const data = await response.json();
 
-    <body>
-        <h1>Mini Search Engine</h1>
-        <div class="search-container">
-            <input onkeydown="handleKeyPress(event)" type="text" id="query" placeholder="Enter your query" />
-            <button id="search-button">Search</button>
-        </div>
-        <div id="latency"></div>
-        <div id="results"></div>
+        const container = document.getElementById("stats");
+        container.innerHTML = `
+          <p>Total Pages Indexed: ${data.total_pages}</p>
+        `;
 
-        <script>
-            const searchButton = document.getElementById("search-button")
-            const queryInput = document.getElementById("query");
-            const resultsDiv = document.getElementById("results");
-            const latencyDiv = document.getElementById("latency");
+        // Build a table for domain counts
+        if (data.domain_counts && data.domain_counts.length > 0) {
+          let html = "<table><tr><th>Domain</th><th>Count</th></tr>";
+          data.domain_counts.forEach(item => {
+            html += `<tr><td>${item.domain}</td><td>${item.count}</td></tr>`;
+          });
+          html += "</table>";
+          container.innerHTML += html;
+        } else {
+          container.innerHTML += "<p>No domain data available.</p>";
+        }
+      } catch (err) {
+        console.error("Error fetching stats:", err);
+      }
+    }
 
-            
-            const search = async() => {
-                const query = queryInput.value.trim()
-                if(!query){
-                    alert("Please input a query")
-                    return
-                }
-
-                resultsDiv.innerHTML = "";
-                latencyDiv.textContent = "";
-
-                try{
-                    // Start timing the search
-                    const startTime = performance.now();
-                    const response = await fetch(`/search?q=${encodeURIComponent(query)}`)
-                    const data = await response.json()
-
-                    const endTime = performance.now()
-                    const latency = (endTime - startTime).toFixed(2)
-
-                    latencyDiv.textContent = `Query latency: ${latency} ms`;
-
-                    console.log("The data====", Array.isArray(data), data.length)
-
-                    if (!Array.isArray(data) || data.length === 0) {
-                        resultsDiv.innerHTML = "<p>No results found.</p>";
-                        return;
-                    }
-
-                    data.forEach((item) => {
-                        const itemDiv = document.createElement("div");
-                        itemDiv.className = "result-item";
-              
-                        // Title & link
-                        const title = document.createElement("h4");
-                        const link = document.createElement("a");
-                        link.href = item.url;
-                        link.target = "_blank";
-                        link.textContent = item.title || "Untitled";
-                        title.appendChild(link);
-              
-                        // Snippet
-                        const snippet = document.createElement("p");
-                        snippet.textContent = item.snippet || "No snippet available";
-                        snippet.className = "result-text";
-              
-                        itemDiv.appendChild(title);
-                        itemDiv.appendChild(snippet);
-                        resultsDiv.appendChild(itemDiv);
-                      });
-
-                }catch(e){
-                    console.error("Search error:",e)
-                    resultsDiv.innerHTML = `<p>Error fetching results: ${err.message}</p>`;
-                }
-            }
-
-            async function handleKeyPress(event) {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  await search();
-                }
-              }
-
-            searchButton.addEventListener("click", async() => {
-                await search();
-            })
-        </script>
-    </body>
+    fetchStats();
+  </script>
+</body>
 </html>

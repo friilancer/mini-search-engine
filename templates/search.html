@@ -19,6 +19,11 @@
               flex-wrap: wrap;
               margin: 10px;
             }
+            .stats-container{
+                display: flex;
+                justify-content: end;
+                margin: 10px 0 20px
+            }
             #query {
               width: 300px;
               padding: 0.5rem;
@@ -56,6 +61,9 @@
 
     <body>
         <h1>Mini Search Engine</h1>
+        <div class="stats-container">
+            <a class="stats-link" href="/stats">Go to stats page</a>
+        </div>
         <div class="search-container">
             <input onkeydown="handleKeyPress(event)" type="text" id="query" placeholder="Enter your query" />
             <button id="search-button">Search</button>
@@ -83,7 +91,7 @@
                 try{
                     // Start timing the search
                     const startTime = performance.now();
-                    const response = await fetch(`/search?q=${encodeURIComponent(query)}`)
+                    const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`)
                     const data = await response.json()
 
                     const endTime = performance.now()
