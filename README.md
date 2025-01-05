@@ -18,7 +18,6 @@ It showcases:
 4. [Installation & Setup](#installation--setup)  
 5. [Environment Variables](#environment-variables)  
 6. [Usage](#usage)  
-7. [If We Had More Time & Resources](#if-we-had-more-time--resources)  
 8. [Contributing](#contributing)
 
 ---
@@ -44,8 +43,45 @@ It showcases:
 1. **Python** – chosen for **requests** (crawler) and **BeautifulSoup** (HTML parsing), plus it has straightforward bindings for **Tantivy**.  
 2. **Flask** – lightweight web framework to serve search endpoints and optional HTML pages.  
 3. **SQLite** – quick, file-based database for storing crawled pages (`url`, `title`, `snippet`, and optionally `domain`).  
-4. **Tantivy** – a Rust-based search engine library with Python bindings, chosen for fast indexing and low-latency queries (meeting the sub-50ms requirement if well-tuned).  
-5. **python-dotenv** – loads environment variables from a `.env` file to configure domains, max pages, etc.
+4. **Tantivy** – a Rust-based search engine library with Python bindings, chosen for fast indexing and low-latency queries.  
+
+
+### Challenges
+1. **Crawling**  
+   - **Challenges**:  
+     - Respecting domain/path restrictions and limiting pages (e.g., 10,000 max per domain).  
+     - Avoiding boilerplate content in docs that could reduce relevancy.  
+   - **Solutions**:  
+     - Implemented a simple Python crawler with `requests` and `BeautifulSoup` to parse only allowed domains and store meaningful snippets.  
+     - Used domain-based filtering and (optionally) `robots.txt` checks to remain compliant.  
+     - Extracted the `<title>` and key body text while skipping script/style tags.
+
+2. **Indexing (Choice Between Tantivy and Vespa)**  
+   - **Decision**: **Tantivy**  
+     - **Why Not Vespa?** Vespa is powerful for large-scale, distributed use cases, but it’s more complex to set up for a “mini” search engine.  
+     - **Why Tantivy?** Tantivy is lightweight, fast (written in Rust), and easy to integrate via Python bindings. It can handle our sub-50ms latency requirement out of the box with proper tuning. 
+   - **Challenges**:  
+     - Balancing stored vs. indexed fields for performance (only store what we display, index what we need to search).  
+     - Ensuring consistent reindexing when new pages are crawled.  
+   - **Solutions**:  
+     - Implemented a lean schema (`title`, `snippet`, `url`) with the right `tokenizer` to improve recall thereby improving accuracy 
+     - Provided an endpoint (`/api/index`) to recreate or update the index whenever needed.
+
+3. **Ranking & Relevancy**  
+   - **Challenges**:   
+     - Risk of repeated boilerplate content across pages.  
+   - **Optimizations**:  
+     - Unfortunately, the search function in tantivity does not take params to tune search.  
+
+4. **Proxy Use**  
+   - **Usage**:  
+     - We kept it simple by making direct requests, limiting to allowed domains.  
+   - **How We Would Employ It**:  
+     - For high-scale crawling or avoiding IP-based rate limits, we’d integrate a rotating proxy strategy. Each request could route through a proxy pool to distribute load and reduce the chance of being blocked.  
+
+Overall, we aimed for a **lightweight** yet **performant** architecture—simple Python crawling, **Tantivy** for low-latency indexing, and a few **Flask** endpoints for user-facing search and stats. This stack balances clarity, speed, and flexibility for a mini search engine prototype. 
+
+
 
 **Why not something more robust?**  
 We wanted a **mini** search engine that’s easy to set up locally. For higher-scale or distributed systems, we might opt for solutions like ElasticSearch, or a more advanced crawling strategy with scheduling.
@@ -95,44 +131,6 @@ We wanted a **mini** search engine that’s easy to set up locally. For higher-s
 6. **Reload index**
     call the /api/index endpoint to trigger a reload of the indexes
 
-## Tech Stack & Design Decisions
-
-We evaluated several options and encountered various **challenges** at each phase—crawling, indexing, and ranking. Here is how we approached them:
-
-1. **Crawling**  
-   - **Challenges**:  
-     - Respecting domain/path restrictions and limiting pages (e.g., 10,000 max per domain).  
-     - Avoiding boilerplate content in docs that could reduce relevancy.  
-   - **Solutions**:  
-     - Implemented a simple Python crawler with `requests` and `BeautifulSoup` to parse only allowed domains and store meaningful snippets.  
-     - Used domain-based filtering and (optionally) `robots.txt` checks to remain compliant.  
-     - Extracted the `<title>` and key body text while skipping script/style tags.
-
-2. **Indexing (Choice Between Tantivy and Vespa)**  
-   - **Decision**: **Tantivy**  
-     - **Why Not Vespa?** Vespa is powerful for large-scale, distributed use cases, but it’s more complex to set up for a “mini” search engine.  
-     - **Why Tantivy?** Tantivy is lightweight, fast (written in Rust), and easy to integrate via Python bindings. It can handle our sub-50ms latency requirement out of the box with proper tuning. 
-   - **Challenges**:  
-     - Balancing stored vs. indexed fields for performance (only store what we display, index what we need to search).  
-     - Ensuring consistent reindexing when new pages are crawled.  
-   - **Solutions**:  
-     - Implemented a lean schema (`title`, `snippet`, `url`) with the right `tokenizer` to improve recall thereby improving accuracy 
-     - Provided an endpoint (`/api/index`) to recreate or update the index whenever needed.
-
-3. **Ranking & Relevancy**  
-   - **Challenges**:   
-     - Risk of repeated boilerplate content across pages.  
-   - **Optimizations**:  
-     - Unfortunately, the search function in tantivity does not take params to tune search.  
-
-4. **Proxy Use**  
-   - **Usage**:  
-     - We kept it simple by making direct requests, limiting to allowed domains.  
-   - **How We Would Employ It**:  
-     - For high-scale crawling or avoiding IP-based rate limits, we’d integrate a rotating proxy strategy. Each request could route through a proxy pool to distribute load and reduce the chance of being blocked.  
-
-Overall, we aimed for a **lightweight** yet **performant** architecture—simple Python crawling, **Tantivy** for low-latency indexing, and a few **Flask** endpoints for user-facing search and stats. This stack balances clarity, speed, and flexibility for a mini search engine prototype. 
-
 ## Usage
 
 ### UI
@@ -170,35 +168,51 @@ This section outlines how you can deploy the mini search engine in different env
 
 2. **Set Environment Variables**  
 
-3. **Initialize/Update the Index** (If needed)  
+3. **Run the Flask App**  
+   - Development (not recommended for production):
+     ```bash
+     flask run 
+     ```
+   - Your app is accessible at `localhost:5000/`.
+
+4. **Initialize crawler/Update the Index** (If needed)  
    - Run your crawler:
      ```bash
-     curl -X POST http://127.0.0.1:5000/api/crawl
+     curl -X POST `http://127.0.0.1:5000/api/crawl`
      ```
    - Then reindex:
      ```bash
-     curl -X POST http://127.0.0.1:5000/api/index
+     curl -X GET `http://127.0.0.1:5000/api/index`
      ```
-
-4. **Run the Flask App**  
-   - Development (not recommended for production):
-     ```bash
-     flask run --host=0.0.0.0 --port=5000
-     ```
-   - Your app is accessible at `http://<your_server_ip>:5000/`.
-
-**Pros**: Simple to set up.  
-**Cons**: Not suitable for high-traffic production, debug mode is insecure if left on.
 
 ---
 
 ### 2. Using a Production WSGI Server
 
-For a more robust setup on a VM or bare-metal:
+Simple and straightforward deployment can be done to heroku, a Procfile has already been added to speed up setup:
 
-1. **Install Gunicorn** (or another WSGI server):
-   ```bash
-   pip install gunicorn
+1. **Ensure Dependencies**  
+   - You have a working Python environment (3.8+ recommended).
+   - `pip install -r requirements.txt` to install all necessary packages.
+
+2. **Set Environment Variables**  
+
+3. **Run the Flask App**  
+   - Development (not recommended for production):
+     ```bash
+     flask run 
+     ```
+   - Your app is accessible at `localhost:5000/`.
+
+4. **Initialize crawlere/Update the Index** (Optional, if results are not being returned)  
+   - Run your crawler:
+     ```bash
+     curl -X POST `link/api/crawl`
+     ```
+   - Then reindex:
+     ```bash
+     curl -X GET `link/api/index`
+     ```
 
 
 # Contributing
