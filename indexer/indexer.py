@@ -8,6 +8,7 @@ load_dotenv()
 
 INDEX_PATH = os.getenv("INDEX_PATH")
 
+
 # Create the Tantivy index schema
 def create_index():
     try: 
@@ -18,9 +19,8 @@ def create_index():
         print(f"Failed to load index at {INDEX_PATH}. Loading existing index...")
         schema_builder = tantivy.SchemaBuilder()
         schema_builder.add_text_field("title", stored=True)
-        schema_builder.add_text_field("snippet", stored=True)
+        schema_builder.add_text_field("snippet", stored=True, indexed=True)
         schema_builder.add_text_field("url", stored=True)
-        schema_builder.add_text_field("content", stored=False)
         schema = schema_builder.build()
         index = tantivy.Index(schema, path=INDEX_PATH)
         return index
@@ -40,7 +40,6 @@ def index_data(index, db_path="crawler/crawled_data.db"):
                 title=row[1],
                 snippet=row[2],
                 url=row[0],
-                content=row[2] # Index snippet as content for searching
             )
         )
     
