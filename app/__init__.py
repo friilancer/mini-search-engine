@@ -10,7 +10,7 @@ def create_app():
     
     app = Flask(__name__, template_folder=templates_path)
 
-    # crawl_all_domains()
+    crawl_all_domains()
     
     search_index = create_index()
 
