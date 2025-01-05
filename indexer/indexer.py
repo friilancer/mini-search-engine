@@ -1,9 +1,12 @@
 import tantivy
 import sqlite3
 import os
+from dotenv import load_dotenv
 
 
-INDEX_PATH = "indexer/search_index/"
+load_dotenv()
+
+INDEX_PATH = os.getenv("INDEX_PATH")
 
 # Create the Tantivy index schema
 def create_index():

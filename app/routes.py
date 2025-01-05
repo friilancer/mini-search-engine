@@ -1,26 +1,24 @@
-from flask import Blueprint, jsonify, request
-from crawler.crawler import crawl_domain
+from flask import Blueprint, jsonify, request, render_template
+from crawler.crawler import crawl_all_domains
 from indexer.indexer import create_index
-import tantivy
+import os
+from dotenv import load_dotenv
 
+
+load_dotenv()
+
+INDEX_PATH = os.getenv("INDEX_PATH")
 crawler_bp = Blueprint('crawler', __name__)
-INDEX_PATH = "indexer/search_index/"
+
 
 @crawler_bp.route('/crawl', methods=["POST"])
 def trigger_crawler():
-    data = request.json
-    start_url = data.get('start_url')
-    max_pages = data.get('max_pages')
-
-    if not start_url:
-        return jsonify({"error": "start_url is required"}), 400
-    
     try:
-        crawl_domain(start_url, max_pages)
+        crawl_all_domains()
         return jsonify({
             "message": "Crawling started", 
-            "start_url": start_url
         }), 200
+
     except Exception as e:
         return jsonify({"error", str(e)}), 500
 
@@ -51,3 +49,7 @@ def search():
         })
 
     return jsonify(response)
+
+@crawler_bp.route("/", methods=["GET"])
+def home():
+    return render_template('search.html')
