@@ -23,7 +23,7 @@ def create_index():
         print(f"Failed to load index at {index_path}. Loading existing index... {e}")
         schema_builder = tantivy.SchemaBuilder()
         schema_builder.add_text_field("title", stored=True)
-        schema_builder.add_text_field("snippet", stored=True)
+        schema_builder.add_text_field("snippet", stored=True, tokenizer_name='en_stem')
         schema_builder.add_text_field("url", stored=True)
         schema = schema_builder.build()
         index = tantivy.Index(schema, path=index_path)
