@@ -1,0 +1,11 @@
+# .dockerignore
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.swp
+.env
+crawler/crawled_data.db
+indexer/search_index/
+.git/

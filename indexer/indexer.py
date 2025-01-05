@@ -10,9 +10,9 @@ INDEX_PATH = os.getenv("INDEX_PATH")
 
 # Create the Tantivy index schema
 def create_index():
+    base_dir = os.path.abspath(os.path.dirname(__file__))
+    index_path = os.path.join(base_dir, '..', INDEX_PATH)
     try: 
-        base_dir = os.path.abspath(os.path.dirname(__file__))
-        index_path = os.path.join(base_dir, '..', INDEX_PATH)
         if not os.path.exists(index_path):
             print(f"Creating folder for index at: {index_path}")
             os.makedirs(index_path, exist_ok=True)
@@ -20,7 +20,7 @@ def create_index():
         index = tantivy.Index.open(index_path)
         return index
     except Exception as e:
-        print(f"Failed to load index at {index_path}. Loading existing index... {e}")
+        print(f"Failed to load index at {index_path}. Creating new index... {e}")
         schema_builder = tantivy.SchemaBuilder()
         schema_builder.add_text_field("title", stored=True)
         schema_builder.add_text_field("snippet", stored=True, tokenizer_name='en_stem')

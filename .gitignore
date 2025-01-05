@@ -1,4 +1,4 @@
-env/*
+venv/*
 *.db
 .DS_Store
 indexer/search_index/*
