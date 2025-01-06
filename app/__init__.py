@@ -2,6 +2,7 @@ from flask import Flask
 from indexer.indexer import create_index, index_data
 from crawler.crawler import crawl_all_domains
 from .routes import crawler_bp
+from .errors import page_not_found, server_error
 import os
 
 def create_app():
@@ -22,5 +23,7 @@ def create_app():
     index_data(search_index)
     
     app.register_blueprint(crawler_bp)
+    app.register_error_handler(404, page_not_found)
+    app.register_error_handler(500, server_error)
 
     return app
