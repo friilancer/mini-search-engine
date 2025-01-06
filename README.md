@@ -16,9 +16,8 @@ It showcases:
 2. [Tech Stack & Design Decisions](#tech-stack--design-decisions)  
 3. [Project Structure](#project-structure)  
 4. [Installation & Setup](#installation--setup)  
-5. [Environment Variables](#environment-variables)  
-6. [Usage](#usage)  
-8. [Contributing](#contributing)
+5. [Usage](#usage)  
+6. [Contributing](#contributing)
 
 ---
 
@@ -28,13 +27,12 @@ It showcases:
 - **Store** crawled data (title, snippet, URL, domain) in a local SQLite database.  
 - **Index** using Tantivy for low-latency, full-text search.  
 - **Flask** routes for:
-  - `POST /crawl` to trigger the crawler.
-  - `POST /reindex` to rebuild the Tantivy index from the DB.
+  - `POST api/crawl` to trigger the crawler.
+  - `POST api/index` to rebuild the Tantivy index from the DB.
   - `GET /search?q=<query>` to retrieve top results (JSON).
   - `GET /stats` to view total pages and pages-per-domain stats (JSON).
-  - `GET /stats_page` (optional) to show stats in a simple HTML table.
 - ** Simple Frontend** to search and display results with a snippet, title, and link.  
-- **Domain-based** control and **robots.txt** adherence (if you enable it) to respect site crawling policies.
+- **Domain-based** control and **robots.txt** adherence (if enabled) to respect site crawling policies.
 
 ---
 
@@ -58,7 +56,7 @@ It showcases:
 
 2. **Indexing (Choice Between Tantivy and Vespa)**  
    - **Decision**: **Tantivy**  
-     - **Why Not Vespa?** Vespa is powerful for large-scale, distributed use cases, but it’s more complex to set up for a “mini” search engine.  
+     - **Why Not Vespa?** Vespa is powerful for large-scale, distributed use cases, but it’s more complex to set up for a “mini” search engine and frankly felt like an overkill for this.  
      - **Why Tantivy?** Tantivy is lightweight, fast (written in Rust), and easy to integrate via Python bindings. It can handle our sub-50ms latency requirement out of the box with proper tuning. 
    - **Challenges**:  
      - Balancing stored vs. indexed fields for performance (only store what we display, index what we need to search).  
@@ -69,23 +67,27 @@ It showcases:
 
 3. **Ranking & Relevancy**  
    - **Challenges**:   
-     - Risk of repeated boilerplate content across pages.  
-   - **Optimizations**:  
-     - Unfortunately, the search function in tantivity does not take params to tune search.  
+     - Risk of repeated boilerplate content across pages or irrelevant results.  
+   - **Solutions**:  
+     - Tokenized the snippet field using `en_stem`, which is a slower tokenizer but recommended to improve recall 
 
 4. **Proxy Use**  
    - **Usage**:  
      - We kept it simple by making direct requests, limiting to allowed domains.  
    - **How We Would Employ It**:  
-     - For high-scale crawling or avoiding IP-based rate limits, we’d integrate a rotating proxy strategy. Each request could route through a proxy pool to distribute load and reduce the chance of being blocked.  
+     - For high-scale crawling or avoiding IP-based rate limits, we’d integrate a rotating proxy strategy. Each request could route through a proxy pool to distribute load and reduce the chance of being blocked. 
 
-Overall, we aimed for a **lightweight** yet **performant** architecture—simple Python crawling, **Tantivy** for low-latency indexing, and a few **Flask** endpoints for user-facing search and stats. This stack balances clarity, speed, and flexibility for a mini search engine prototype. 
+5. **Speed**  
+   - **Challenge**:  
+     - Keeping search speed under 50ms.  
+   - **How We Would Employ It**:  
+     - This became increasingly challenging as the number of indexed pages grew, on local, achieving under 80ms was the norm. On deploying to production, based on the nature of the underlying machine it was deployed to and latency based on personal network, under 200ms seems to be the norm;
+     - For a production ready site, such application will be deployed to a more robust environment, with multiple instances running, and a cache to improve speed
 
 
-
-**Why not something more robust?**  
-We wanted a **mini** search engine that’s easy to set up locally. For higher-scale or distributed systems, we might opt for solutions like ElasticSearch, or a more advanced crawling strategy with scheduling.
-
+6. **Miscellaneous**
+    Other engineering decisions but not limited to the list, that could improve the app would be:
+    - Implementing a cron job to crawl and index the records periodically to keep results fresh and relevant
 ---
 
 ## Project Structure
@@ -96,6 +98,25 @@ We wanted a **mini** search engine that’s easy to set up locally. For higher-s
 ---
 
 ## Installation & Setup
+
+### 1. Running the app locally
+    There are two ways to get the app up and running locally; either you run it in a container or not; choose your pick
+
+### Here is a list of required params in the env
+
+    ### Comma-separated list of domains to crawl
+    DOMAINS=angular.io,api.drupal.org,api.haxe.org
+
+    ###  Maximum number of pages per domain
+    MAX_PAGES_PER_DOMAIN=1000
+
+    ###  File path for the auto generated indexed
+    INDEX_PATH=indexer/search_index/
+
+    ###  Environment specification: local, dev, production
+    ENVIRONMENT=local
+
+### Without Docker
 
 1. **Clone the Repository**  
    ```bash
@@ -112,24 +133,60 @@ We wanted a **mini** search engine that’s easy to set up locally. For higher-s
 
 4. **create and update .env**
 
-    ### Comma-separated list of domains to crawl
-    DOMAINS=angular.io,api.drupal.org,api.haxe.org
-
-    ###  Maximum number of pages per domain
-    MAX_PAGES_PER_DOMAIN=1000
-
-    ###  File path for the auto generated indexed
-    INDEX_PATH=indexer/search_index/
-
-    ###  Environment specification: local, dev, production
-    ENVIRONMENT=local
-
-
 5. **Run the app**
     flask run
 
 6. **Reload index**
     call the /api/index endpoint to trigger a reload of the indexes
+
+### With Docker
+
+1. **Clone the Repository**  
+   ```bash
+   git clone https://github.com/__username__/mini_search_engine.git
+   cd mini_search_engine
+
+2. **Ensure Dependencies**  
+   - You have a working Python environment (3.13+ recommended).
+
+3. **Set Environment Variables**  
+
+4. **Run the docker file using the commands**  
+   - docker build -t mini-search-engine .
+   - docker run --env-file .env -p 5000:5000 mini-search-engine
+   
+   Your app will accessible at the displayed url
+
+5. **Initialize crawler/Update the Index** (If needed)  
+   - Run your crawler:
+     ```bash
+     curl -X POST `http://__url__/api/crawl` 
+     ```
+   - Then reindex:
+     ```bash
+     curl -X GET `http://__url__/api/index`
+     ```
+
+---
+
+### 2. Deploying to production
+
+### Heroku
+
+Simple and straightforward deployment can be done to heroku, you will need a heroku account and docker installed to test run the container. The dockerfile, and other cofig files will take care of all dependencies and getting your app running
+
+-   create a repo on github
+-   create an app on heroku
+-   Change stack to container through the dashboard or via cli with `heroku stack:set container -a mini-search-engine`
+-   connect the app to the github repo, and turn on auto deploys
+-   fill in the necessary env vars
+
+    Ps. If you run into any issues, you might need to add env variables on your heroku dashboard. Just go to the dashboard of the created app > settings > config_vars; there you can add everything that should be in the env; and as always remember to call the url to api/index to refresh the index
+
+### Fly.io
+
+You can also easily deploy the mini search engine app on fly; Once a repo is connected, it'll automatically pickup on the already generated fly.toml file
+
 
 ## Usage
 
@@ -154,52 +211,5 @@ We wanted a **mini** search engine that’s easy to set up locally. For higher-s
     Renders an HTML page that calls /stats and displays a table of domain counts.
 
 
-## Deployment Notes
-
-This section outlines how you can deploy the mini search engine in different environments, from local hosting to containerization.
-
----
-
-### 1. Running the app locally
-
-1. **Ensure Dependencies**  
-   - You have a working Python environment (3.13+ recommended).
-
-2. **Set Environment Variables**  
-
-3. **Run the docker file using the commands**  
-   - docker build -t mini-search-engine .
-   - docker run --env-file .env -p 5000:5000 mini-search-engine
-   
-   Your app will accessible at the displayed url
-
-4. **Initialize crawler/Update the Index** (If needed)  
-   - Run your crawler:
-     ```bash
-     curl -X POST `http://__url__/api/crawl` 
-     ```
-   - Then reindex:
-     ```bash
-     curl -X GET `http://__url__/api/index`
-     ```
-
----
-
-### 2. Deploying to heroku
-
-Simple and straightforward deployment can be done to heroku, you will need a heroku account and docker installed to test run the container. The dockerfile, and other cofig files will take care of all dependencies and getting your app running
-
--   create a repo on github
--   create an app on heroku
--   Change stack to container through the dashboard or via cli with `heroku stack:set container -a mini-search-engine`
--   connect the app to the github repo, and turn on auto deploys
--   fill in the necessary env vars
-
-    Ps. If you run into any issues, you might need to add env variables on your heroku dashboard. Just go to the dashboard of the created app > settings > config_vars; there you can add everything that should be in the env; and as always remember to call the url to api/index to refresh the index
-
-### 2. Deploying to fly
-
-You can also easily deploy the mini search engine app on fly; Once a repo is connected, it'll automatically pickup on the already generated fly.toml file
-
-# Contributing
+## Contributing
     Happy Searching! If you have questions or ideas, feel free to open an issue or reach out.
