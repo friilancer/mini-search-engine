@@ -191,7 +191,8 @@ Simple and straightforward deployment can be done to heroku, you will need a her
 
 -   create a repo on github
 -   create an app on heroku
--   connect the app to the github repo, and turn onn auto deploys
+-   Change stack to container through the dashboard or via cli with `heroku stack:set container -a mini-search-engine`
+-   connect the app to the github repo, and turn on auto deploys
 -   fill in the necessary env vars
 
     Ps. If you run into any issues, you might need to add env variables on your heroku dashboard. Just go to the dashboard of the created app > settings > config_vars; there you can add everything that should be in the env; and as always remember to call the url to api/index to refresh the index
