@@ -160,20 +160,18 @@ This section outlines how you can deploy the mini search engine in different env
 
 ---
 
-### 1. Local/Manual Deployment
+### 1. Running the app locally
 
 1. **Ensure Dependencies**  
-   - You have a working Python environment (3.8+ recommended).
-   - `pip install -r requirements.txt` to install all necessary packages.
+   - You have a working Python environment (3.13+ recommended).
 
 2. **Set Environment Variables**  
 
-3. **Run the Flask App**  
-   - Development (not recommended for production):
-     ```bash
-     flask run 
-     ```
-   - Your app is accessible at `localhost:5000/`.
+3. **Run the docker file using the commands**  
+   - docker build -t mini-search-engine .
+   - docker run --env-file .env -p 5000:5000 flask-app
+   
+   Your app is accessible at the displayed url
 
 4. **Initialize crawler/Update the Index** (If needed)  
    - Run your crawler:
@@ -187,33 +185,17 @@ This section outlines how you can deploy the mini search engine in different env
 
 ---
 
-### 2. Using a Production WSGI Server
+### 2. Deploying to production
 
-Simple and straightforward deployment can be done to heroku, a Procfile has already been added to speed up setup:
+Simple and straightforward deployment can be done to heroku, you will need a heroku account and docker installed to test run the container. The dockerfile will take care of all dependencies and getting your app running
 
-1. **Ensure Dependencies**  
-   - You have a working Python environment (3.8+ recommended).
-   - `pip install -r requirements.txt` to install all necessary packages.
+-   heroku login
+-   heroku create your-app-name
+-   heroku container:login
+-   heroku container:push web
+-   heroku container:release web
 
-2. **Set Environment Variables**  
-
-3. **Run the Flask App**  
-   - Development (not recommended for production):
-     ```bash
-     flask run 
-     ```
-   - Your app is accessible at `localhost:5000/`.
-
-4. **Initialize crawlere/Update the Index** (Optional, if results are not being returned)  
-   - Run your crawler:
-     ```bash
-     curl -X POST `link/api/crawl`
-     ```
-   - Then reindex:
-     ```bash
-     curl -X GET `link/api/index`
-     ```
-
+    Ps. If you run into any issues, you might need to add env variables on your heroku dashboard. Just go to the dashboard of the created app > settings > config_vars; there you can add everythin that should be in the env; and as always remember to call the url to reindex/refresh the index
 
 # Contributing
     Happy Searching! If you have questions or ideas, feel free to open an issue or reach out.
