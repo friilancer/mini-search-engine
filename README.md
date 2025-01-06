@@ -99,7 +99,7 @@ We wanted a **mini** search engine that’s easy to set up locally. For higher-s
 
 1. **Clone the Repository**  
    ```bash
-   git clone https://github.com/YourUsername/mini_search_engine.git
+   git clone https://github.com/__username__/mini_search_engine.git
    cd mini_search_engine
 
 2. **Create & Activate a Virtual Environment (optional, but recommended)**
@@ -169,33 +169,32 @@ This section outlines how you can deploy the mini search engine in different env
 
 3. **Run the docker file using the commands**  
    - docker build -t mini-search-engine .
-   - docker run --env-file .env -p 5000:5000 flask-app
+   - docker run --env-file .env -p 5000:5000 mini-search-engine
    
-   Your app is accessible at the displayed url
+   Your app will accessible at the displayed url
 
 4. **Initialize crawler/Update the Index** (If needed)  
    - Run your crawler:
      ```bash
-     curl -X POST `http://127.0.0.1:5000/api/crawl`
+     curl -X POST `http://__url__/api/crawl` 
      ```
    - Then reindex:
      ```bash
-     curl -X GET `http://127.0.0.1:5000/api/index`
+     curl -X GET `http://__url__/api/index`
      ```
 
 ---
 
 ### 2. Deploying to production
 
-Simple and straightforward deployment can be done to heroku, you will need a heroku account and docker installed to test run the container. The dockerfile will take care of all dependencies and getting your app running
+Simple and straightforward deployment can be done to heroku, you will need a heroku account and docker installed to test run the container. The dockerfile, and other cofig files will take care of all dependencies and getting your app running
 
--   heroku login
--   heroku create your-app-name
--   heroku container:login
--   heroku container:push web
--   heroku container:release web
+-   create a repo on github
+-   create an app on heroku
+-   connect the app to the github repo, and turn onn auto deploys
+-   fill in the necessary env vars
 
-    Ps. If you run into any issues, you might need to add env variables on your heroku dashboard. Just go to the dashboard of the created app > settings > config_vars; there you can add everythin that should be in the env; and as always remember to call the url to reindex/refresh the index
+    Ps. If you run into any issues, you might need to add env variables on your heroku dashboard. Just go to the dashboard of the created app > settings > config_vars; there you can add everything that should be in the env; and as always remember to call the url to api/index to refresh the index
 
 # Contributing
     Happy Searching! If you have questions or ideas, feel free to open an issue or reach out.
