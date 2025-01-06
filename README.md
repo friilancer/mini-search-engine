@@ -185,7 +185,7 @@ This section outlines how you can deploy the mini search engine in different env
 
 ---
 
-### 2. Deploying to production
+### 2. Deploying to heroku
 
 Simple and straightforward deployment can be done to heroku, you will need a heroku account and docker installed to test run the container. The dockerfile, and other cofig files will take care of all dependencies and getting your app running
 
@@ -195,6 +195,10 @@ Simple and straightforward deployment can be done to heroku, you will need a her
 -   fill in the necessary env vars
 
     Ps. If you run into any issues, you might need to add env variables on your heroku dashboard. Just go to the dashboard of the created app > settings > config_vars; there you can add everything that should be in the env; and as always remember to call the url to api/index to refresh the index
+
+### 2. Deploying to fly
+
+You can also easily deploy the mini search engine app on fly; Once a repo is connected, it'll automatically pickup on the already generated fly.toml file
 
 # Contributing
     Happy Searching! If you have questions or ideas, feel free to open an issue or reach out.
