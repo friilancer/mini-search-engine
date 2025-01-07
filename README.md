@@ -81,7 +81,7 @@ It showcases:
    - **Challenge**:  
      - Keeping search speed under 50ms.  
    - **How We Would Employ It**:  
-     - This became increasingly challenging as the number of indexed pages grew, on local, achieving under 80ms was the norm. On deploying to production, based on the nature of the underlying machine it was deployed to and latency based on personal network, under 200ms seems to be the norm;
+     - This became increasingly challenging as the number of indexed pages grew, on local, achieving under 80ms was the norm. On deploying to production, based on the nature of the underlying machine it was deployed to and latency based on personal network, under 500ms seems to be the norm;
      - For a production ready site, such application will be deployed to a more robust environment, with multiple instances running, and a cache to improve speed
 
 
