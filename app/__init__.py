@@ -1,6 +1,5 @@
 from flask import Flask
 from indexer.indexer import create_index, index_data
-from crawler.crawler import crawl_all_domains
 from .routes import crawler_bp
 from .errors import page_not_found, server_error
 import os
@@ -10,8 +9,6 @@ def create_app():
     templates_path = os.path.join(base_dir, '..', 'templates')
     
     app = Flask(__name__, template_folder=templates_path)
-
-    crawl_all_domains()
     
     search_index = create_index()
 
