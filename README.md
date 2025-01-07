@@ -157,15 +157,8 @@ It showcases:
    
    Your app will accessible at the displayed url
 
-5. **Initialize crawler/Update the Index** (If needed)  
-   - Run your crawler:
-     ```bash
-     curl -X POST `http://__url__/api/crawl` 
-     ```
-   - Then reindex:
-     ```bash
-     curl -X GET `http://__url__/api/index`
-     ```
+6. **Reload index**
+    call the /api/index endpoint to trigger a reload of the indexes
 
 ---
 
